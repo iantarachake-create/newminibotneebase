@@ -22,7 +22,7 @@ module.exports = {
         const ram = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1);
 
         // --- PRE-LOAD IMAGE INTO RAM ---
-        const imageUrl = "https://raw.githubusercontent.com/hostdeployment-bit/NEEBASE/main/popkid.jpg";
+        const imageUrl = "https://raw.githubusercontent.com/iantarachake-create/newminibotneebase/main/popkid.jpg";
         if (!menuBuffer) {
             try {
                 const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
