@@ -4,44 +4,90 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Popkid MD — Link your WhatsApp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;700&family=Pacifico&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#120508;--red:#d4202f;--gold:#f2c14e;--text:#fbeee6;--muted:#c9a9a0;--glass:rgba(255,255,255,.07);--line:rgba(242,193,78,.25)}
-  *{box-sizing:border-box}
-  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text);
-    background:radial-gradient(900px 500px at 15% -10%,rgba(212,32,47,.45),transparent 60%),
-               radial-gradient(700px 500px at 100% 110%,rgba(242,193,78,.18),transparent 60%),var(--bg)}
-  .card{width:100%;max-width:440px;padding:28px 24px;border-radius:22px;background:var(--glass);
-    border:1px solid var(--line);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
-    box-shadow:0 20px 60px rgba(0,0,0,.45)}
-  h1{margin:0 0 4px;font-size:1.5rem;letter-spacing:.3px}
-  h1 span{color:var(--gold)}
-  p.sub{margin:0 0 20px;color:var(--muted);font-size:.93rem;line-height:1.45}
-  label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px}
-  input{width:100%;padding:14px 16px;font-size:1.05rem;color:var(--text);background:rgba(0,0,0,.35);
-    border:1px solid var(--line);border-radius:14px;outline:none}
-  input:focus{border-color:var(--gold)}
-  button{width:100%;margin-top:14px;padding:14px;font-size:1rem;font-weight:700;color:#2a0a0d;border:0;
-    border-radius:14px;cursor:pointer;background:linear-gradient(135deg,var(--gold),#e8a93a)}
-  button:disabled{opacity:.6;cursor:wait}
-  .hint{font-size:.78rem;color:var(--muted);margin-top:8px}
-  .err{margin-top:14px;padding:10px 12px;border-radius:12px;background:rgba(212,32,47,.2);
-    border:1px solid rgba(212,32,47,.5);font-size:.9rem;display:none}
+  :root{
+    --bg:#1a0a33;--purple:#a855f7;--purple2:#7c3aed;--gold:#ffd86b;--gold2:#f5b82e;
+    --text:#fffaf0;--muted:#e6d6ff;--glass:rgba(255,255,255,.16);--glass2:rgba(255,255,255,.1);
+    --line:rgba(255,226,140,.5);--ok:#8bf5b9
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{min-height:100%}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:max(20px,env(safe-area-inset-top)) 18px max(20px,env(safe-area-inset-bottom));
+    font-family:"Dancing Script","Segoe Script",cursive;font-weight:500;font-size:1.12rem;color:var(--text);
+    background:var(--bg)}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;background:url("https://files.catbox.moe/22s70y.jpg") center/cover no-repeat,var(--bg)}
+  .wrap{width:100%;max-width:450px;display:flex;flex-direction:column;gap:14px}
+  .glass{border-radius:30px;background:linear-gradient(145deg,rgba(255,255,255,.2),rgba(255,255,255,.05));
+    border:1px solid var(--line);backdrop-filter:blur(6px) saturate(170%);-webkit-backdrop-filter:blur(6px) saturate(170%);
+    box-shadow:0 18px 50px rgba(40,10,90,.4),inset 0 1.5px 0 rgba(255,255,255,.65),inset 0 -1px 0 rgba(255,255,255,.12)}
+  .card{padding:28px 24px}
+  .server{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:999px;font-size:1.05rem}
+  .server .sdot{width:11px;height:11px;border-radius:50%;background:#aaa;flex:none}
+  .server.up .sdot{background:var(--ok);box-shadow:0 0 0 0 rgba(139,245,185,.7);animation:pulse 2s infinite}
+  .server.down .sdot{background:#ff7b8a}
+  .server b{color:var(--gold)}
+  .server .ms{margin-left:auto;color:var(--muted);font-size:.95rem}
+  @keyframes pulse{70%{box-shadow:0 0 0 9px rgba(139,245,185,0)}100%{box-shadow:0 0 0 0 rgba(139,245,185,0)}}
+  h1{margin:0 0 4px;font-family:Pacifico,cursive;font-weight:400;font-size:2.1rem;text-align:center;
+    background:linear-gradient(135deg,#fff3c4,var(--gold) 45%,#e0b3ff);-webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 2px 10px rgba(80,20,140,.5))}
+  p.sub{margin:0 0 20px;color:var(--muted);font-size:1.12rem;line-height:1.4;text-align:center}
+  label{display:block;font-size:1.05rem;color:var(--gold);margin-bottom:6px}
+  input{width:100%;padding:14px 18px;font:700 1.25rem "Dancing Script",cursive;color:#fff;background:rgba(40,12,80,.4);
+    border:1px solid var(--line);border-radius:18px;outline:none;transition:.2s}
+  input::placeholder{color:rgba(230,214,255,.6)}
+  input:focus{border-color:var(--gold);box-shadow:0 0 0 4px rgba(255,216,107,.25)}
+  button{font-family:"Dancing Script",cursive;cursor:pointer}
+  #go{width:100%;margin-top:14px;padding:14px;font-size:1.3rem;font-weight:700;color:#2b0e57;border:0;border-radius:18px;
+    background:linear-gradient(135deg,#fff0b0,var(--gold) 40%,var(--gold2));box-shadow:0 8px 24px rgba(245,184,46,.45),inset 0 1.5px 0 rgba(255,255,255,.8);transition:transform .15s}
+  #go:active{transform:scale(.97)}
+  #go:disabled{opacity:.65;cursor:wait}
+  .hint{font-size:1rem;color:var(--muted);margin-top:8px}
+  .err{margin-top:14px;padding:10px 14px;border-radius:16px;background:rgba(255,80,110,.28);
+    border:1px solid rgba(255,140,160,.7);font-size:1.05rem;display:none}
   .box{display:none;margin-top:6px;text-align:center}
-  .code{font-size:2.3rem;font-weight:800;letter-spacing:6px;color:var(--gold);padding:16px 8px;margin:14px 0 6px;
-    border-radius:16px;background:rgba(0,0,0,.35);border:1px dashed var(--line);user-select:all}
-  ol{text-align:left;color:var(--muted);font-size:.9rem;line-height:1.6;padding-left:20px;margin:14px 0 0}
-  .copy{background:transparent;color:var(--gold);border:1px solid var(--line);margin-top:8px;padding:10px}
-  .ok{font-size:1.1rem;font-weight:700;color:#7ee2a8}
-  .pill{margin-top:20px;text-align:center;font-size:.78rem;color:var(--muted)}
-  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7ee2a8;margin-right:6px}
+  .code{font-family:Pacifico,cursive;font-size:2.2rem;letter-spacing:5px;color:var(--gold);padding:16px 8px;margin:14px 0 6px;
+    border-radius:22px;background:rgba(40,12,80,.4);border:1px dashed var(--line);user-select:all;text-shadow:0 0 18px rgba(255,216,107,.5)}
+  ol{text-align:left;color:var(--muted);font-size:1.08rem;line-height:1.55;padding-left:22px;margin:14px 0 0}
+  .copy{width:100%;background:rgba(255,255,255,.12);color:var(--gold);border:1px solid var(--line);border-radius:16px;margin-top:8px;padding:10px;font-size:1.15rem;font-weight:700}
+  .ok{font-family:Pacifico,cursive;font-size:1.5rem;color:var(--ok)}
+  .pill{margin-top:20px;text-align:center;font-size:1rem;color:var(--muted)}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px}
+  .links{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .lnk{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 10px;border-radius:22px;text-decoration:none;
+    color:var(--text);font-weight:700;font-size:1.15rem;text-align:center;transition:transform .15s}
+  .lnk:active{transform:scale(.96)}
+  .lnk svg{width:22px;height:22px;fill:var(--gold);flex:none}
+  .player{padding:18px 18px 14px}
+  .player h2{margin:0 0 10px;font-family:Pacifico,cursive;font-weight:400;font-size:1.25rem;color:var(--gold);text-align:center}
+  .now{text-align:center;color:var(--muted);font-size:1.05rem;margin-bottom:8px}
+  .bar{height:6px;border-radius:6px;background:rgba(255,255,255,.22);cursor:pointer;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--purple),var(--gold))}
+  .ctrl{display:flex;align-items:center;justify-content:center;gap:16px;margin:12px 0 8px}
+  .ctrl button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.14);color:var(--gold);
+    display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  .ctrl button svg{width:20px;height:20px;fill:currentColor}
+  .ctrl #pp{width:60px;height:60px;color:#2b0e57;border:0;background:linear-gradient(135deg,#fff0b0,var(--gold2));box-shadow:0 6px 20px rgba(245,184,46,.5)}
+  .ctrl #pp svg{width:26px;height:26px}
+  .tracks{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+  .tracks button{padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.1);color:var(--text);font-size:1rem;font-weight:700}
+  .tracks button.on{background:linear-gradient(135deg,var(--purple),var(--purple2));border-color:#e9d5ff;box-shadow:0 0 14px rgba(168,85,247,.7)}
+  :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<div class="card">
-  <h1>Popkid <span>MD</span></h1>
-  <p class="sub">Link your WhatsApp in under a minute. No session ID, no QR scan — just your number.</p>
+<div class="wrap">
 
+<div class="glass server" id="server"><span class="sdot"></span><span>Server: <b id="srvText">checking…</b></span><span class="ms" id="srvMs"></span></div>
+
+<div class="card glass">
+  <h1>Popkid MD</h1>
+  <p class="sub">Link your WhatsApp in under a minute. No session ID, no QR scan — just your number.</p>
   <div id="form">
     <label for="num">WhatsApp number (with country code)</label>
     <input id="num" type="tel" inputmode="numeric" autocomplete="tel" placeholder="2547XXXXXXXX">
@@ -53,7 +99,6 @@
       <ul id="noticeList" style="margin:6px 0 0;padding-left:18px;line-height:1.55"></ul>
     </div>
   </div>
-
   <div class="box" id="codeBox">
     <div>Your pairing code</div>
     <div class="code" id="code">----</div>
@@ -64,13 +109,32 @@
       <li>Enter the code above. This page updates by itself.</li>
     </ol>
   </div>
-
   <div class="box" id="done">
     <div class="ok">✅ Connected!</div>
     <p class="sub" style="margin-top:10px">Your bot is live. Open WhatsApp — you'll get a welcome message.<br>Send <b>.menu</b> to see commands.</p>
   </div>
-
   <div class="pill"><span class="dot"></span><span id="stats">…</span></div>
+</div>
+
+<div class="links">
+  <a class="lnk glass" href="https://whatsapp.com/channel/0029Vb9Iwzz1iUxTgb2Vps1S" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24"><path d="M3 10v4a1 1 0 0 0 1 1h2l5 4V5L6 9H4a1 1 0 0 0-1 1zm13.5 2a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>Join Channel</a>
+  <a class="lnk glass" href="https://chat.whatsapp.com/Lol0Goj9qSmApSwgBdI72i?s=cl&p=a&mlu=4&ilr=4" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24"><path d="M16 11a3 3 0 1 0-2.9-3.8A3 3 0 0 0 16 11zM8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 2c-2.3 0-7 1.2-7 3.5V19h14v-2.5C15 14.2 10.3 13 8 13zm8 0c-.3 0-.6 0-1 .1 1.2.8 2 1.9 2 3.4V19h6v-2.5c0-2.3-4.7-3.5-7-3.5z"/></svg>Join Group</a>
+</div>
+
+<div class="glass player">
+  <h2>Music</h2>
+  <div class="now" id="now">Track 1</div>
+  <div class="bar" id="bar"><i id="fill"></i></div>
+  <div class="ctrl">
+    <button id="prev" aria-label="Previous"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
+    <button id="pp" aria-label="Play"><svg viewBox="0 0 24 24" id="ppIcon"><path d="M8 5v14l11-7z"/></svg></button>
+    <button id="next" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6zM16 6h2v12h-2z"/></svg></button>
+  </div>
+  <div class="tracks" id="tracks"></div>
+</div>
+
 </div>
 
 <script>
@@ -80,8 +144,17 @@ let poll = null;
 function showErr(msg){ const e=$('err'); e.textContent=msg; e.style.display=msg?'block':'none'; }
 
 async function loadStats(){
-  try{ const r=await (await fetch('/api/stats')).json(); $('stats').textContent=r.online+' bot'+(r.online===1?'':'s')+' online'; }
-  catch{ $('stats').textContent=''; }
+  const t0 = performance.now(), s = $('server');
+  try{
+    const r=await (await fetch('/api/stats')).json();
+    $('stats').textContent=r.online+' bot'+(r.online===1?'':'s')+' online';
+    s.className='glass server up'; $('srvText').textContent='Online';
+    $('srvMs').textContent=Math.round(performance.now()-t0)+' ms';
+  }
+  catch{
+    $('stats').textContent='';
+    s.className='glass server down'; $('srvText').textContent='Offline'; $('srvMs').textContent='';
+  }
 }
 loadStats(); setInterval(loadStats, 30000);
 (async () => {
@@ -140,6 +213,31 @@ function startPolling(number){
     }catch{}
   }, 3000);
 }
+
+/* Music player */
+const songs = ["132r31","2bertr","199egd","t14yca"].map(id=>"https://files.catbox.moe/"+id+".m4a");
+const audio = new Audio(); audio.preload = "none";
+let cur = 0;
+const PLAY = '<path d="M8 5v14l11-7z"/>', PAUSE = '<path d="M6 5h4v14H6zm8 0h4v14h-4z"/>';
+songs.forEach((_,i)=>{
+  const b=document.createElement('button'); b.textContent='Track '+(i+1);
+  b.onclick=()=>{ load(i); audio.play().catch(()=>{}); };
+  $('tracks').appendChild(b);
+});
+function load(i){
+  cur=(i+songs.length)%songs.length; audio.src=songs[cur];
+  $('now').textContent='Track '+(cur+1);
+  [...$('tracks').children].forEach((b,j)=>b.classList.toggle('on',j===cur));
+}
+function setIcon(){ const p=!audio.paused; $('ppIcon').innerHTML=p?PAUSE:PLAY; $('pp').setAttribute('aria-label',p?'Pause':'Play'); }
+$('pp').onclick=()=>{ if(!audio.src) load(0); audio.paused?audio.play().catch(()=>{}):audio.pause(); };
+$('next').onclick=()=>{ load(cur+1); audio.play().catch(()=>{}); };
+$('prev').onclick=()=>{ load(cur-1); audio.play().catch(()=>{}); };
+audio.onplay=audio.onpause=setIcon;
+audio.onended=()=>{ load(cur+1); audio.play().catch(()=>{}); };
+audio.ontimeupdate=()=>{ $('fill').style.width=(audio.duration?audio.currentTime/audio.duration*100:0)+'%'; };
+$('bar').onclick=e=>{ if(!audio.duration) return; const r=$('bar').getBoundingClientRect(); audio.currentTime=(e.clientX-r.left)/r.width*audio.duration; };
+load(0);
 </script>
 </body>
 </html>
