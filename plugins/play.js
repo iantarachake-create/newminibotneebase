@@ -124,10 +124,95 @@ const localAudio = async (url) => {
 };
 
 // ---------- fallback: download APIs (used only if yt-dlp fails) ----------
-const pickLink = (d) => d?.downloadUrl || d?.download_url || d?.url || d?.link
-    || d?.result?.download_url || d?.result?.url || d?.file?.url || null;
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+const RYUU_KEY = process.env.RYUU_API_KEY || 'ryuu-apis-9c049100c28fc39e1791732697814';
+const ELLYTUBE_KEY = process.env.ELLYTUBE_API_KEY || 'Agustus2026';
+
+// Different APIs nest the link in different places, so look through every layer
+const pickMedia = (data) => {
+    if (!data || typeof data !== 'object') return null;
+    const layers = [data?.result?.result, data?.result?.data, data?.data?.result, data?.result, data?.data, data];
+    for (const layer of layers) {
+        if (!layer || typeof layer !== 'object') continue;
+        const link = layer.link || layer.url || layer.download || layer.downloadUrl || layer.download_url
+            || layer.cdn || layer.media || layer.audio || layer.mp3 || layer.file?.url;
+        if (link && typeof link === 'string' && (/^https?:\/\//i.test(link) || link.startsWith('/'))) {
+            return { link, title: layer.title || data?.result?.title || data?.title };
+        }
+    }
+    return null;
+};
+
+const fetchJson = async (url, headers = {}, timeout = 90000) => {
+    const res = await axios.get(url, {
+        headers: { Accept: 'application/json', 'User-Agent': UA, ...headers },
+        timeout, validateStatus: () => true, responseType: 'text', transformResponse: (r) => r
+    });
+    let data;
+    try { data = JSON.parse(res.data); } catch { throw new Error(`invalid JSON (${res.status})`); }
+    if (res.status === 401) throw new Error('API key invalid');
+    if (res.status === 429) throw new Error('API rate limited');
+    return { ok: res.status >= 200 && res.status < 300, status: res.status, data };
+};
+
+// Some APIs hand back links that need a Referer (or return an HTML error page), so download the file ourselves
+const downloadBuffer = async (link) => {
+    const res = await axios.get(link, {
+        headers: { 'User-Agent': UA, Accept: '*/*', Referer: 'https://ellytube.web.id/' },
+        responseType: 'arraybuffer', timeout: 120000, maxContentLength: 64 * 1024 * 1024,
+        validateStatus: () => true
+    });
+    if (res.status < 200 || res.status >= 300) throw new Error(`Media download failed: ${res.status}`);
+    const buf = Buffer.from(res.data);
+    const sample = buf.slice(0, 64).toString('utf8').toLowerCase();
+    if (sample.includes('<!doctype') || sample.includes('<html')) throw new Error('Link returned HTML instead of audio');
+    if (buf.length < 10000) throw new Error(`Media file too small (${buf.length} bytes)`);
+    return buf;
+};
 
 const PROVIDERS = [
+    {
+        name: 'ellytube',
+        get: async (url) => {
+            const qs = new URLSearchParams({ url, type: 'audio', quality: '320kbps', apikey: ELLYTUBE_KEY }).toString();
+            const { ok, status, data } = await fetchJson(`https://ellytube.web.id/api/v1/youtube/download?${qs}`, {}, 95000);
+            if (!ok || data?.status === false) throw new Error(`EllyTube HTTP ${status}`);
+            return pickMedia(data);
+        }
+    },
+    {
+        name: 'apiziaul',
+        get: async (url) => {
+            try {
+                const { ok, data } = await fetchJson(`https://apiziaul.vercel.app/api/downloader/ytmp3?url=${encodeURIComponent(url)}`);
+                const media = ok && pickMedia(data);
+                if (media) return media;
+            } catch { /* try the second endpoint */ }
+            const { ok, status, data } = await fetchJson(`https://apiziaul.vercel.app/api/downloader/ytplaymp3?query=${encodeURIComponent(url)}`);
+            if (!ok) throw new Error(`apiziaul HTTP ${status}`);
+            return pickMedia(data);
+        }
+    },
+    {
+        name: 'ryuu',
+        get: async (url) => {
+            const { ok, status, data } = await fetchJson(
+                `https://api.ryuu-dev.my.id/downloader/youtube?url=${encodeURIComponent(url)}&format=mp3`,
+                { 'X-RYUU-APIKEY': RYUU_KEY }, 95000);
+            if (!ok) throw new Error(`Ryuu HTTP ${status}`);
+            return pickMedia(data);
+        }
+    },
+    {
+        name: 'sidycoders',
+        get: async (url) => {
+            const { ok, status, data } = await fetchJson(
+                `https://api.sidycoders.xyz/api/ytdl?url=${encodeURIComponent(url)}&format=mp3&apikey=memberdycoders`, {}, 60000);
+            if (!ok) throw new Error(`sidy HTTP ${status}`);
+            const link = data?.cdn || data?.result?.cdn || data?.url;
+            return link ? { link, title: data?.title || data?.result?.title } : null;
+        }
+    },
     {
         // Vevioz REST API v1: create a job, then poll it until the link is ready
         name: 'vevioz',
@@ -135,7 +220,7 @@ const PROVIDERS = [
             const API = 'https://api.vevioz.com/api/v1/jobs';
             const created = await axios.post(API, { url, format: 'mp3' }, { timeout: 30000 });
             const first = created.data?.data || created.data;
-            if (pickLink(first)) return first;
+            if (pickMedia(first)) return pickMedia(first);
 
             const id = first?.job_id || first?.id;
             const token = first?.token || first?.access_token;
@@ -145,7 +230,7 @@ const PROVIDERS = [
                 await wait(3000);
                 const { data } = await axios.get(`${API}/${id}`, { params: { token }, timeout: 30000 });
                 const job = data?.data || data;
-                if (pickLink(job)) return job;
+                if (pickMedia(job)) return pickMedia(job);
                 if (['failed', 'error', 'cancelled'].includes(String(job?.status || '').toLowerCase())) {
                     throw new Error(job?.error || job?.message || 'Vevioz job failed.');
                 }
@@ -160,26 +245,27 @@ const PROVIDERS = [
                 params: { apiKey: 'xbps-install-Syu', format: 'mp3', url },
                 timeout: 90000,
             });
-            return data?.data;
+            return pickMedia(data?.data);
         }
     },
 ];
 
+// Try every source in order; the first one that gives a real audio file wins
 const apiAudio = async (url) => {
-    let lastErr;
+    const errors = [];
     for (const provider of PROVIDERS) {
         try {
-            const d = await provider.get(url);
-            let link = pickLink(d);
-            if (link && link.startsWith('/')) link = 'https://api.vevioz.com' + link;
-            if (link) return { link, title: d?.title };
-            throw new Error('API could not generate a download link.');
+            const media = await provider.get(url);
+            if (!media?.link) throw new Error('no media link');
+            const link = media.link.startsWith('/') ? 'https://api.vevioz.com' + media.link : media.link;
+            const buffer = await downloadBuffer(link);
+            return { buffer, title: media.title };
         } catch (e) {
             console.error(`Play provider failed [${provider.name}]:`, e.message);
-            lastErr = e;
+            errors.push(`${provider.name}: ${e.message}`);
         }
     }
-    throw lastErr || new Error('All download sources failed.');
+    throw new Error(`All download sources failed (${errors.join(' | ')})`.slice(0, 400));
 };
 
 module.exports = {
@@ -223,7 +309,7 @@ module.exports = {
                 console.error('Local download failed, trying APIs:', e.message);
                 if (/longer than 20 minutes/.test(e.message)) return m.reply(`❌ *${e.message}*`);
                 const api = await apiAudio(video.url);
-                audio = { url: api.link };
+                audio = api.buffer;
                 if (title === "YouTube Audio" && api.title) title = api.title;
             }
 
